@@ -76,7 +76,8 @@ builder.Services.AddOpenIddict()
             .EnableAuthorizationEndpointPassthrough()
             .EnableTokenEndpointPassthrough()
             .EnableLogoutEndpointPassthrough()
-            .EnableStatusCodePagesIntegration();
+            .EnableStatusCodePagesIntegration()
+            .DisableTransportSecurityRequirement(); // Allow HTTP in development
 
         // Disable HTTPS requirement for development
         if (builder.Environment.IsDevelopment())
@@ -91,11 +92,8 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-// Add authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = OpenIddictServerAspNetCoreDefaults.AuthenticationScheme;
-});
+// Add authentication without setting default scheme
+builder.Services.AddAuthentication();
 
 // Add hosted services
 builder.Services.AddHostedService<DatabaseInitializerWorker>();

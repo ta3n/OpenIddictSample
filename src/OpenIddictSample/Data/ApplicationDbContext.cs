@@ -17,22 +17,7 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(builder);
 
-        // Configure OpenIddict entities with multi-tenant support
-        builder.Entity<OpenIddictEntityFrameworkCoreApplication>(entity =>
-        {
-            entity.HasIndex(e => e.ClientId).HasFilter("[TenantId] IS NOT NULL");
-        });
-
-        builder.Entity<OpenIddictEntityFrameworkCoreAuthorization>(entity =>
-        {
-            entity.HasIndex(e => e.Subject).HasFilter("[TenantId] IS NOT NULL");
-        });
-
-        builder.Entity<OpenIddictEntityFrameworkCoreToken>(entity =>
-        {
-            entity.HasIndex(e => e.Subject).HasFilter("[TenantId] IS NOT NULL");
-        });
-
+        // Configure application-specific entities
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.HasKey(e => e.Id);
