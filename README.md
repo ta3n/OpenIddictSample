@@ -13,7 +13,7 @@ Authorization Code Flow là luồng OAuth 2.0 được khuyến nghị cho các 
 3. Server tạo authorization code và redirect về client
 4. Client đổi authorization code lấy access token tại `/connect/token`
 
-**Endpoint:** 
+**Endpoint:**
 - Authorization: `GET/POST /connect/authorize`
 - Token: `POST /connect/token`
 
@@ -26,7 +26,7 @@ GET /connect/authorize?
   &scope=openid profile email api
   &state=random_state_value
   &tenant_id=tenant1
-  
+
 Header: X-Tenant-ID: tenant1
 ```
 
@@ -239,7 +239,7 @@ GET https://localhost:5001/connect/authorize?
   &response_type=code
   &scope=openid profile email api
   &state=xyz
-  
+
 Headers:
   X-Tenant-ID: tenant1
 ```
@@ -295,7 +295,7 @@ token={refresh_token}
 ```http
 POST https://localhost:5001/connect/logout?
   post_logout_redirect_uri=https://localhost:5001
-  
+
 Headers:
   Cookie: {your_auth_cookie}
 ```

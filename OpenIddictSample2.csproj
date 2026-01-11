@@ -11,17 +11,17 @@
     <!-- OpenIddict Core packages -->
     <PackageReference Include="OpenIddict.AspNetCore" Version="5.3.0" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="5.3.0" />
-    
+
     <!-- Database -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    
+
     <!-- Redis for distributed caching -->
     <PackageReference Include="StackExchange.Redis" Version="2.7.17" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.0" />
-    
+
     <!-- Additional utilities -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>

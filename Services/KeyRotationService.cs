@@ -48,7 +48,7 @@ public class KeyRotationService : IKeyRotationService
 
         var rsa = RSA.Create();
         rsa.ImportRSAPrivateKey(Convert.FromBase64String(keyInfo.PrivateKey), out _);
-        
+
         var securityKey = new RsaSecurityKey(rsa) { KeyId = keyInfo.KeyId };
         return new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
     }
@@ -90,7 +90,7 @@ public class KeyRotationService : IKeyRotationService
     {
         using var rsa = RSA.Create(2048);
         var keyId = Guid.NewGuid().ToString();
-        
+
         var privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
         var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
 
@@ -106,7 +106,7 @@ public class KeyRotationService : IKeyRotationService
 
         // Store current key
         var keyIdString = $"{KeyPrefix}current:{tenantId ?? DefaultTenant}";
-        await _cache.SetStringAsync(keyIdString, JsonSerializer.Serialize(keyInfo), 
+        await _cache.SetStringAsync(keyIdString, JsonSerializer.Serialize(keyInfo),
             new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = _keyLifetime.Add(TimeSpan.FromDays(30))

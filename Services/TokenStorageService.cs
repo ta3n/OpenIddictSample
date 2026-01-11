@@ -43,7 +43,7 @@ public class TokenStorageService : ITokenStorageService
     {
         var key = TokenPrefix + tokenId;
         var json = JsonSerializer.Serialize(data);
-        
+
         await _cache.SetStringAsync(key, json, new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = expiration
@@ -57,7 +57,7 @@ public class TokenStorageService : ITokenStorageService
     {
         var key = TokenPrefix + tokenId;
         var json = await _cache.GetStringAsync(key);
-        
+
         if (string.IsNullOrEmpty(json))
             return null;
 
@@ -68,7 +68,7 @@ public class TokenStorageService : ITokenStorageService
     {
         var key = TokenPrefix + tokenId;
         await _cache.RemoveAsync(key);
-        
+
         // Add to revoked list
         var revokedKey = RevokedPrefix + tokenId;
         await _cache.SetStringAsync(revokedKey, "1", new DistributedCacheEntryOptions
@@ -81,16 +81,16 @@ public class TokenStorageService : ITokenStorageService
     {
         var userTokensKey = UserTokensPrefix + userId;
         var json = await _cache.GetStringAsync(userTokensKey);
-        
+
         if (!string.IsNullOrEmpty(json))
         {
             var tokenIds = JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
-            
+
             foreach (var tokenId in tokenIds)
             {
                 await RevokeRefreshTokenAsync(tokenId);
             }
-            
+
             await _cache.RemoveAsync(userTokensKey);
         }
     }
@@ -106,13 +106,13 @@ public class TokenStorageService : ITokenStorageService
     {
         var userTokensKey = UserTokensPrefix + userId;
         var json = await _cache.GetStringAsync(userTokensKey);
-        
-        var tokenIds = string.IsNullOrEmpty(json) 
-            ? new List<string>() 
+
+        var tokenIds = string.IsNullOrEmpty(json)
+            ? new List<string>()
             : JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
-        
+
         tokenIds.Add(tokenId);
-        
+
         var updatedJson = JsonSerializer.Serialize(tokenIds);
         await _cache.SetStringAsync(userTokensKey, updatedJson, new DistributedCacheEntryOptions
         {

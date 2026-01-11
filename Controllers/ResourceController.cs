@@ -50,7 +50,7 @@ public class ResourceController : ControllerBase
     public IActionResult GetProtectedData()
     {
         var tenantId = _tenantService.GetCurrentTenantId();
-        
+
         return Ok(new
         {
             Message = "This is protected data",
@@ -73,7 +73,7 @@ public class ResourceController : ControllerBase
     public async Task<IActionResult> GetTenantData()
     {
         var userTenantId = User.FindFirst("tenant_id")?.Value;
-        
+
         if (string.IsNullOrEmpty(userTenantId))
         {
             return BadRequest(new { Error = "Tenant ID not found in token" });

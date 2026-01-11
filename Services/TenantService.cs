@@ -52,7 +52,7 @@ public class TenantService : ITenantService
     {
         var tenant = await _context.Tenants
             .FirstOrDefaultAsync(t => t.Id == tenantId && t.IsActive);
-        
+
         return tenant != null;
     }
 }

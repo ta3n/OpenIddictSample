@@ -9,9 +9,9 @@ public class Tenant
     public string Name { get; set; } = string.Empty;
     public string Domain { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
-    
+
     // Tenant-specific signing key identifier
     public string? SigningKeyId { get; set; }
-    
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

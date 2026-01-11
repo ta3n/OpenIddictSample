@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddictSample2.Data;
+using OpenIddictSample2.Middleware;
 using OpenIddictSample2.Services;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -12,6 +13,9 @@ builder.Services.AddControllersWithViews();
 
 // Configure HttpContextAccessor for tenant service
 builder.Services.AddHttpContextAccessor();
+
+// Configure HttpClient for BFF
+builder.Services.AddHttpClient();
 
 // Configure Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -31,6 +35,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<ITokenStorageService, TokenStorageService>();
 builder.Services.AddSingleton<IKeyRotationService, KeyRotationService>();
+builder.Services.AddScoped<IBffSessionService, BffSessionService>();
 
 // Configure Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -40,6 +45,32 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/Account/Logout";
     });
 
+// Configure CORS for BFF (allow frontend SPA)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BffPolicy", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",  // React
+                "http://localhost:4200",  // Angular
+                "http://localhost:8080",  // Vue
+                "http://localhost:5173"   // Vite
+            )
+            .AllowCredentials()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
+// Configure Anti-forgery for BFF
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "CSRF-TOKEN";
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
 // Configure OpenIddict
 builder.Services.AddOpenIddict()
     // Register Entity Framework Core stores
@@ -48,7 +79,7 @@ builder.Services.AddOpenIddict()
         options.UseEntityFrameworkCore()
                .UseDbContext<ApplicationDbContext>();
     })
-    
+
     // Register ASP.NET Core server
     .AddServer(options =>
     {
@@ -84,7 +115,7 @@ builder.Services.AddOpenIddict()
         options.SetAccessTokenLifetime(TimeSpan.FromMinutes(30));
         options.SetRefreshTokenLifetime(TimeSpan.FromDays(30));
     })
-    
+
     // Register ASP.NET Core validation handler
     .AddValidation(options =>
     {
@@ -165,6 +196,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Enable CORS for BFF
+app.UseCors("BffPolicy");
+
+// Add BFF security headers
+app.UseBffSecurityHeaders();
 
 app.UseRouting();
 

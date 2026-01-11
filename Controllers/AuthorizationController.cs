@@ -146,10 +146,10 @@ public class AuthorizationController : Controller
 
         // Create authorization entry
         var authorizationId = await _authorizationManager.GetIdAsync(result.Principal);
-        var authorization = !string.IsNullOrEmpty(authorizationId) 
+        var authorization = !string.IsNullOrEmpty(authorizationId)
             ? await _authorizationManager.FindByIdAsync(authorizationId)
             : null;
-        
+
         authorization ??= await CreateAuthorizationAsync(principal, application);
 
         if (authorization != null)
@@ -362,7 +362,7 @@ public class AuthorizationController : Controller
 
         var principal = new ClaimsPrincipal(identity);
         principal.SetScopes(request.GetScopes());
-        
+
         var resources = new List<string>();
         await foreach (var resource in _scopeManager.ListResourcesAsync(principal.GetScopes()))
         {
