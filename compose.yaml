@@ -1,0 +1,70 @@
+﻿version: '3.8'
+
+services:
+  # SQL Server for OpenIddict data storage
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: openiddict_sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourPassword123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - openiddict_network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-U", "sa", "-P", "YourPassword123!", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for token storage and caching
+  redis:
+    image: redis:7-alpine
+    container_name: openiddict_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - openiddict_network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # OpenIddict Application (uncomment to run app in Docker)
+  # openiddictsample2:
+  #   image: openiddictsample2
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: openiddict_app
+  #   ports:
+  #     - "5000:8080"
+  #     - "5001:8081"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=https://+:8081;http://+:8080
+  #     - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=OpenIddictSample;User Id=sa;Password=YourPassword123!;TrustServerCertificate=True
+  #     - ConnectionStrings__Redis=redis:6379
+  #   depends_on:
+  #     sqlserver:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - openiddict_network
+
+networks:
+  openiddict_network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  redis_data:
+
