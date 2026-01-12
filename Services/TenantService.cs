@@ -9,25 +9,26 @@ namespace OpenIddictSample2.Services;
 public interface ITenantService
 {
     string? GetCurrentTenantId();
-    Task<bool> ValidateTenantAsync(string tenantId);
+
+    Task<bool> ValidateTenantAsync(
+        string tenantId
+    );
 }
 
-public class TenantService : ITenantService
+public class TenantService(
+    IHttpContextAccessor httpContextAccessor,
+    ApplicationDbContext context
+)
+    : ITenantService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ApplicationDbContext _context;
-
-    public TenantService(IHttpContextAccessor httpContextAccessor, ApplicationDbContext context)
-    {
-        _httpContextAccessor = httpContextAccessor;
-        _context = context;
-    }
-
     public string? GetCurrentTenantId()
     {
         // Extract tenant from header, subdomain, or claims
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null) return null;
+        var httpContext = httpContextAccessor.HttpContext;
+        if (httpContext == null)
+        {
+            return null;
+        }
 
         // Try from header first
         if (httpContext.Request.Headers.TryGetValue("X-Tenant-ID", out var tenantId))
@@ -48,9 +49,11 @@ public class TenantService : ITenantService
         return tenantClaim?.Value;
     }
 
-    public async Task<bool> ValidateTenantAsync(string tenantId)
+    public async Task<bool> ValidateTenantAsync(
+        string tenantId
+    )
     {
-        var tenant = await _context.Tenants
+        var tenant = await context.Tenants
             .FirstOrDefaultAsync(t => t.Id == tenantId && t.IsActive);
 
         return tenant != null;

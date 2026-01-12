@@ -18,29 +18,16 @@ namespace OpenIddictSample2.Controllers;
 /// - Token Revocation
 /// - Multi-Tenant Support
 /// </summary>
-public class AuthorizationController : Controller
+public class AuthorizationController(
+    IOpenIddictApplicationManager applicationManager,
+    IOpenIddictAuthorizationManager authorizationManager,
+    IOpenIddictScopeManager scopeManager,
+    ITenantService tenantService,
+    ITokenStorageService tokenStorage
+)
+    : Controller
 {
-    private readonly IOpenIddictApplicationManager _applicationManager;
-    private readonly IOpenIddictAuthorizationManager _authorizationManager;
-    private readonly IOpenIddictScopeManager _scopeManager;
-    private readonly ITenantService _tenantService;
-    private readonly ITokenStorageService _tokenStorage;
-
     private const string TenantIdClaim = "tenant_id";
-
-    public AuthorizationController(
-        IOpenIddictApplicationManager applicationManager,
-        IOpenIddictAuthorizationManager authorizationManager,
-        IOpenIddictScopeManager scopeManager,
-        ITenantService tenantService,
-        ITokenStorageService tokenStorage)
-    {
-        _applicationManager = applicationManager;
-        _authorizationManager = authorizationManager;
-        _scopeManager = scopeManager;
-        _tenantService = tenantService;
-        _tokenStorage = tokenStorage;
-    }
 
     /// <summary>
     /// Authorization endpoint - handles authorization code flow
@@ -50,32 +37,38 @@ public class AuthorizationController : Controller
     [HttpPost("~/connect/authorize")]
     public async Task<IActionResult> Authorize()
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-            throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+        var request = HttpContext.GetOpenIddictServerRequest()
+            ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
         // Get tenant context
-        var tenantId = _tenantService.GetCurrentTenantId();
+        var tenantId = tenantService.GetCurrentTenantId();
         if (string.IsNullOrEmpty(tenantId))
         {
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Tenant ID is required."
-                }));
+                properties: new AuthenticationProperties(
+                    new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Tenant ID is required."
+                    }
+                )
+            );
         }
 
         // Validate tenant
-        if (!await _tenantService.ValidateTenantAsync(tenantId))
+        if (!await tenantService.ValidateTenantAsync(tenantId))
         {
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Invalid tenant."
-                }));
+                properties: new AuthenticationProperties(
+                    new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Invalid tenant."
+                    }
+                )
+            );
         }
 
         // Try to authenticate the user
@@ -88,9 +81,13 @@ public class AuthorizationController : Controller
                 authenticationSchemes: "Cookies",
                 properties: new AuthenticationProperties
                 {
-                    RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
-                        Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList())
-                });
+                    RedirectUri = Request.PathBase
+                        + Request.Path
+                        + QueryString.Create(
+                            Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList()
+                        )
+                }
+            );
         }
 
         // Check if user belongs to the tenant
@@ -99,37 +96,43 @@ public class AuthorizationController : Controller
         {
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "User does not belong to the specified tenant."
-                }));
+                properties: new AuthenticationProperties(
+                    new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "User does not belong to the specified tenant."
+                    }
+                )
+            );
         }
 
         // Retrieve the application details
-        var application = await _applicationManager.FindByClientIdAsync(request.ClientId!) ??
-            throw new InvalidOperationException("The application cannot be found.");
+        var application = await applicationManager.FindByClientIdAsync(request.ClientId!)
+            ?? throw new InvalidOperationException("The application cannot be found.");
 
         // Create a new ClaimsIdentity
         var identity = new ClaimsIdentity(
-            authenticationType: TokenValidationParameters.DefaultAuthenticationType,
-            nameType: Claims.Name,
-            roleType: Claims.Role);
+            TokenValidationParameters.DefaultAuthenticationType,
+            Claims.Name,
+            Claims.Role
+        );
 
         // Add user claims
         var userId = result.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value!;
         identity.SetClaim(Claims.Subject, userId)
-                .SetClaim(Claims.Name, result.Principal.FindFirst(Claims.Name)?.Value)
-                .SetClaim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value)
-                .SetClaim(TenantIdClaim, tenantId);
+            .SetClaim(Claims.Name, result.Principal.FindFirst(Claims.Name)?.Value)
+            .SetClaim(Claims.Email, result.Principal.FindFirst(Claims.Email)?.Value)
+            .SetClaim(TenantIdClaim, tenantId);
 
-        identity.SetDestinations(claim => claim.Type switch
-        {
-            Claims.Name or Claims.Email => new[] { Destinations.AccessToken, Destinations.IdentityToken },
-            Claims.Subject => new[] { Destinations.AccessToken, Destinations.IdentityToken },
-            var type when type == TenantIdClaim => new[] { Destinations.AccessToken, Destinations.IdentityToken },
-            _ => new[] { Destinations.AccessToken }
-        });
+        identity.SetDestinations(
+            claim => claim.Type switch
+            {
+                Claims.Name or Claims.Email => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                Claims.Subject => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                TenantIdClaim => new[] { Destinations.AccessToken, Destinations.IdentityToken },
+                _ => new[] { Destinations.AccessToken }
+            }
+        );
 
         var principal = new ClaimsPrincipal(identity);
 
@@ -138,23 +141,20 @@ public class AuthorizationController : Controller
 
         // Set resources (if any)
         var resources = new List<string>();
-        await foreach (var resource in _scopeManager.ListResourcesAsync(principal.GetScopes()))
-        {
-            resources.Add(resource);
-        }
+        await foreach (var resource in scopeManager.ListResourcesAsync(principal.GetScopes())) resources.Add(resource);
         principal.SetResources(resources);
 
-        // Create authorization entry
-        var authorizationId = await _authorizationManager.GetIdAsync(result.Principal);
+        // Get existing authorization from claims or create new one
+        var authorizationId = result.Principal.GetClaim(Claims.Private.AuthorizationId);
         var authorization = !string.IsNullOrEmpty(authorizationId)
-            ? await _authorizationManager.FindByIdAsync(authorizationId)
+            ? await authorizationManager.FindByIdAsync(authorizationId)
             : null;
 
         authorization ??= await CreateAuthorizationAsync(principal, application);
 
         if (authorization != null)
         {
-            principal.SetAuthorizationId(await _authorizationManager.GetIdAsync(authorization));
+            principal.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
         }
 
         // Return authorization response
@@ -169,8 +169,8 @@ public class AuthorizationController : Controller
     [Produces("application/json")]
     public async Task<IActionResult> Exchange()
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-            throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+        var request = HttpContext.GetOpenIddictServerRequest()
+            ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
         // Handle authorization code flow
         if (request.IsAuthorizationCodeGrantType())
@@ -213,7 +213,7 @@ public class AuthorizationController : Controller
             var userId = result.Principal.FindFirst(Claims.Subject)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
-                await _tokenStorage.RevokeAllTokensForUserAsync(userId);
+                await tokenStorage.RevokeAllTokensForUserAsync(userId);
             }
         }
 
@@ -222,7 +222,8 @@ public class AuthorizationController : Controller
             properties: new AuthenticationProperties
             {
                 RedirectUri = request?.PostLogoutRedirectUri ?? "/"
-            });
+            }
+        );
     }
 
     /// <summary>
@@ -232,8 +233,8 @@ public class AuthorizationController : Controller
     [HttpPost("~/connect/revoke")]
     public async Task<IActionResult> Revoke()
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-            throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+        var request = HttpContext.GetOpenIddictServerRequest()
+            ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
         // Extract token from request
         var token = request.Token;
@@ -243,7 +244,7 @@ public class AuthorizationController : Controller
         }
 
         // Revoke the token
-        await _tokenStorage.RevokeRefreshTokenAsync(token);
+        await tokenStorage.RevokeRefreshTokenAsync(token);
 
         return Ok();
     }
@@ -261,15 +262,19 @@ public class AuthorizationController : Controller
         var refreshTokenId = Guid.NewGuid().ToString();
 
         // Store refresh token data in Redis
-        await _tokenStorage.StoreRefreshTokenAsync(refreshTokenId, new RefreshTokenData
-        {
-            TokenId = refreshTokenId,
-            UserId = userId,
-            TenantId = tenantId,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(30),
-            RotationCount = 0
-        }, TimeSpan.FromDays(30));
+        await tokenStorage.StoreRefreshTokenAsync(
+            refreshTokenId,
+            new RefreshTokenData
+            {
+                TokenId = refreshTokenId,
+                UserId = userId,
+                TenantId = tenantId,
+                IssuedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                RotationCount = 0
+            },
+            TimeSpan.FromDays(30)
+        );
 
         // Add refresh token ID to claims
         principal.SetClaim("refresh_token_id", refreshTokenId);
@@ -286,53 +291,66 @@ public class AuthorizationController : Controller
         {
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Invalid refresh token."
-                }));
+                properties: new AuthenticationProperties(
+                    new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Invalid refresh token."
+                    }
+                )
+            );
         }
 
         // Check if token is revoked
-        if (await _tokenStorage.IsTokenRevokedAsync(oldRefreshTokenId))
+        if (await tokenStorage.IsTokenRevokedAsync(oldRefreshTokenId))
         {
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Token has been revoked."
-                }));
+                properties: new AuthenticationProperties(
+                    new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Token has been revoked."
+                    }
+                )
+            );
         }
 
         // Get stored token data
-        var tokenData = await _tokenStorage.GetRefreshTokenAsync(oldRefreshTokenId);
+        var tokenData = await tokenStorage.GetRefreshTokenAsync(oldRefreshTokenId);
         if (tokenData == null || tokenData.ExpiresAt < DateTime.UtcNow)
         {
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Refresh token expired."
-                }));
+                properties: new AuthenticationProperties(
+                    new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Refresh token expired."
+                    }
+                )
+            );
         }
 
         // Revoke old refresh token
-        await _tokenStorage.RevokeRefreshTokenAsync(oldRefreshTokenId);
+        await tokenStorage.RevokeRefreshTokenAsync(oldRefreshTokenId);
 
         // Generate new refresh token with rotation
         var newRefreshTokenId = Guid.NewGuid().ToString();
-        await _tokenStorage.StoreRefreshTokenAsync(newRefreshTokenId, new RefreshTokenData
-        {
-            TokenId = newRefreshTokenId,
-            UserId = tokenData.UserId,
-            TenantId = tokenData.TenantId,
-            PreviousTokenId = oldRefreshTokenId,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(30),
-            RotationCount = tokenData.RotationCount + 1
-        }, TimeSpan.FromDays(30));
+        await tokenStorage.StoreRefreshTokenAsync(
+            newRefreshTokenId,
+            new RefreshTokenData
+            {
+                TokenId = newRefreshTokenId,
+                UserId = tokenData.UserId,
+                TenantId = tokenData.TenantId,
+                PreviousTokenId = oldRefreshTokenId,
+                IssuedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                RotationCount = tokenData.RotationCount + 1
+            },
+            TimeSpan.FromDays(30)
+        );
 
         // Update principal with new refresh token ID
         var identity = new ClaimsIdentity(principal.Identity);
@@ -345,29 +363,29 @@ public class AuthorizationController : Controller
         return SignIn(newPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
-    private async Task<IActionResult> HandleClientCredentialsAsync(OpenIddictRequest request)
+    private async Task<IActionResult> HandleClientCredentialsAsync(
+        OpenIddictRequest request
+    )
     {
-        var application = await _applicationManager.FindByClientIdAsync(request.ClientId!) ??
-            throw new InvalidOperationException("The application cannot be found.");
+        var application = await applicationManager.FindByClientIdAsync(request.ClientId!)
+            ?? throw new InvalidOperationException("The application cannot be found.");
 
         var identity = new ClaimsIdentity(
-            authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            nameType: Claims.Name,
-            roleType: Claims.Role);
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            Claims.Name,
+            Claims.Role
+        );
 
-        identity.SetClaim(Claims.Subject, await _applicationManager.GetClientIdAsync(application))
-                .SetClaim(Claims.Name, await _applicationManager.GetDisplayNameAsync(application));
+        identity.SetClaim(Claims.Subject, await applicationManager.GetClientIdAsync(application))
+            .SetClaim(Claims.Name, await applicationManager.GetDisplayNameAsync(application));
 
-        identity.SetDestinations(static _ => new[] { Destinations.AccessToken });
+        identity.SetDestinations(static _ => [Destinations.AccessToken]);
 
         var principal = new ClaimsPrincipal(identity);
         principal.SetScopes(request.GetScopes());
 
         var resources = new List<string>();
-        await foreach (var resource in _scopeManager.ListResourcesAsync(principal.GetScopes()))
-        {
-            resources.Add(resource);
-        }
+        await foreach (var resource in scopeManager.ListResourcesAsync(principal.GetScopes())) resources.Add(resource);
         principal.SetResources(resources);
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -375,20 +393,22 @@ public class AuthorizationController : Controller
 
     private async Task<object?> CreateAuthorizationAsync(
         ClaimsPrincipal principal,
-        object application)
+        object application
+    )
     {
-        var clientId = await _applicationManager.GetIdAsync(application);
+        var clientId = await applicationManager.GetIdAsync(application);
         if (string.IsNullOrEmpty(clientId))
         {
             throw new InvalidOperationException("Cannot create authorization: client ID is null");
         }
 
-        var authorization = await _authorizationManager.CreateAsync(
-            principal: principal,
-            subject: principal.GetClaim(Claims.Subject) ?? throw new InvalidOperationException("Subject claim is required"),
-            client: clientId,
-            type: AuthorizationTypes.Permanent,
-            scopes: principal.GetScopes());
+        var authorization = await authorizationManager.CreateAsync(
+            principal,
+            principal.GetClaim(Claims.Subject) ?? throw new InvalidOperationException("Subject claim is required"),
+            clientId,
+            AuthorizationTypes.Permanent,
+            principal.GetScopes()
+        );
 
         return authorization;
     }

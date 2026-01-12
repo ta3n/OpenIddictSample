@@ -1,10 +1,10 @@
 # 🚀 Quick Start Guide - OpenIddict Sample
 
-## Bước 1: Khởi động Redis và SQL Server
+## Bước 1: Khởi động Redis và PostgreSQL
 
 ```bash
-# Chạy Docker Compose để start Redis và SQL Server
-docker-compose up -d sqlserver redis
+# Chạy Docker Compose để start Redis và PostgreSQL
+docker-compose up -d postgres redis
 
 # Kiểm tra services đã chạy
 docker ps
@@ -28,10 +28,10 @@ dotnet run
 
 1. Mở trình duyệt: https://localhost:5001/Account/Register
 2. Nhập thông tin:
-   - Username: `testuser`
-   - Email: `test@example.com`
-   - Password: `Test123!`
-   - Tenant ID: `tenant1` (mặc định)
+    - Username: `testuser`
+    - Email: `test@example.com`
+    - Password: `Test123!`
+    - Tenant ID: `tenant1` (mặc định)
 3. Click "Register"
 
 ## Bước 5: Test Authorization Code Flow
@@ -64,6 +64,7 @@ grant_type=authorization_code
 ```
 
 Bạn sẽ nhận được:
+
 ```json
 {
   "access_token": "eyJ...",
@@ -103,7 +104,7 @@ token={YOUR_REFRESH_TOKEN}
 
 - [ ] Docker đang chạy
 - [ ] Redis đang chạy (port 6379)
-- [ ] SQL Server đang chạy (port 1433)
+- [ ] PostgreSQL đang chạy (port 5432)
 - [ ] Đã restore packages
 - [ ] Đã đăng ký user
 - [ ] Đã test authorization flow
@@ -113,18 +114,21 @@ token={YOUR_REFRESH_TOKEN}
 ## 🛠️ Troubleshooting
 
 ### Redis connection error?
+
 ```bash
 docker logs openiddict_redis
 redis-cli ping  # Should return PONG
 ```
 
-### SQL Server connection error?
+### PostgreSQL connection error?
+
 ```bash
-docker logs openiddict_sqlserver
+docker logs openiddict_postgres
 # Check connection string in appsettings.json
 ```
 
 ### Cannot login?
+
 - Đảm bảo gửi header `X-Tenant-ID: tenant1`
 - Check user đã được tạo trong database
 

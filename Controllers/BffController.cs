@@ -17,43 +17,36 @@ namespace OpenIddictSample2.Controllers;
 /// </summary>
 [ApiController]
 [Route("bff")]
-public class BffController : ControllerBase
+public class BffController(
+    IBffSessionService sessionService,
+    ITenantService tenantService,
+    ILogger<BffController> logger
+)
+    : ControllerBase
 {
-    private readonly IBffSessionService _sessionService;
-    private readonly ITenantService _tenantService;
-    private readonly ILogger<BffController> _logger;
-
-    public BffController(
-        IBffSessionService sessionService,
-        ITenantService tenantService,
-        ILogger<BffController> logger)
-    {
-        _sessionService = sessionService;
-        _tenantService = tenantService;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Login endpoint for BFF pattern
     /// POST /bff/login
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login(
+        [FromBody] LoginRequest request
+    )
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
         {
             return BadRequest(new { error = "username_and_password_required" });
         }
 
-        var tenantId = _tenantService.GetCurrentTenantId();
+        var tenantId = tenantService.GetCurrentTenantId();
         if (string.IsNullOrEmpty(tenantId))
         {
             tenantId = request.TenantId ?? "tenant1";
         }
 
         // Validate tenant
-        if (!await _tenantService.ValidateTenantAsync(tenantId))
+        if (!await tenantService.ValidateTenantAsync(tenantId))
         {
             return BadRequest(new { error = "invalid_tenant" });
         }
@@ -76,28 +69,34 @@ public class BffController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
-        await _sessionService.CreateSessionAsync(sessionId, session);
+        await sessionService.CreateSessionAsync(sessionId, session);
 
         // Set secure HTTP-only cookie
-        Response.Cookies.Append("bff_session", sessionId, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            MaxAge = TimeSpan.FromHours(12)
-        });
-
-        return Ok(new
-        {
-            success = true,
-            user = new
+        Response.Cookies.Append(
+            "bff_session",
+            sessionId,
+            new CookieOptions
             {
-                userId = session.UserId,
-                username = session.Username,
-                email = session.Email,
-                tenantId = session.TenantId
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromHours(12)
             }
-        });
+        );
+
+        return Ok(
+            new
+            {
+                success = true,
+                user = new
+                {
+                    userId = session.UserId,
+                    username = session.Username,
+                    email = session.Email,
+                    tenantId = session.TenantId
+                }
+            }
+        );
     }
 
     /// <summary>
@@ -110,7 +109,7 @@ public class BffController : ControllerBase
     {
         if (Request.Cookies.TryGetValue("bff_session", out var sessionId))
         {
-            await _sessionService.DeleteSessionAsync(sessionId);
+            await sessionService.DeleteSessionAsync(sessionId);
             Response.Cookies.Delete("bff_session");
         }
 
@@ -131,7 +130,7 @@ public class BffController : ControllerBase
             return Unauthorized(new { error = "no_session" });
         }
 
-        var session = await _sessionService.GetSessionAsync(sessionId);
+        var session = await sessionService.GetSessionAsync(sessionId);
         if (session == null)
         {
             Response.Cookies.Delete("bff_session");
@@ -142,26 +141,28 @@ public class BffController : ControllerBase
         if (session.AccessTokenExpiresAt <= DateTime.UtcNow)
         {
             // Try to refresh
-            var refreshed = await _sessionService.RefreshSessionTokensAsync(sessionId);
+            var refreshed = await sessionService.RefreshSessionTokensAsync(sessionId);
             if (!refreshed)
             {
-                await _sessionService.DeleteSessionAsync(sessionId);
+                await sessionService.DeleteSessionAsync(sessionId);
                 Response.Cookies.Delete("bff_session");
                 return Unauthorized(new { error = "session_expired" });
             }
 
             // Get updated session
-            session = await _sessionService.GetSessionAsync(sessionId);
+            session = await sessionService.GetSessionAsync(sessionId);
         }
 
-        return Ok(new
-        {
-            userId = session?.UserId ?? string.Empty,
-            username = session?.Username ?? string.Empty,
-            email = session?.Email ?? string.Empty,
-            tenantId = session?.TenantId ?? string.Empty,
-            authenticated = true
-        });
+        return Ok(
+            new
+            {
+                userId = session?.UserId ?? string.Empty,
+                username = session?.Username ?? string.Empty,
+                email = session?.Email ?? string.Empty,
+                tenantId = session?.TenantId ?? string.Empty,
+                authenticated = true
+            }
+        );
     }
 
     /// <summary>
@@ -174,14 +175,16 @@ public class BffController : ControllerBase
     [HttpPut("api/{**path}")]
     [HttpDelete("api/{**path}")]
     [HttpPatch("api/{**path}")]
-    public async Task<IActionResult> ApiProxy(string path)
+    public async Task<IActionResult> ApiProxy(
+        string path
+    )
     {
         if (!Request.Cookies.TryGetValue("bff_session", out var sessionId))
         {
             return Unauthorized(new { error = "no_session" });
         }
 
-        var session = await _sessionService.GetSessionAsync(sessionId);
+        var session = await sessionService.GetSessionAsync(sessionId);
         if (session == null)
         {
             return Unauthorized(new { error = "session_expired" });
@@ -190,9 +193,9 @@ public class BffController : ControllerBase
         // Check if token needs refresh
         if (session.AccessTokenExpiresAt <= DateTime.UtcNow.AddMinutes(5))
         {
-            await _sessionService.RefreshSessionTokensAsync(sessionId);
-            session = await _sessionService.GetSessionAsync(sessionId);
-            
+            await sessionService.RefreshSessionTokensAsync(sessionId);
+            session = await sessionService.GetSessionAsync(sessionId);
+
             if (session == null)
             {
                 return Unauthorized(new { error = "session_refresh_failed" });
@@ -211,7 +214,7 @@ public class BffController : ControllerBase
         };
 
         // Add access token to authorization header
-        requestMessage.Headers.Authorization = 
+        requestMessage.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", session.AccessToken);
 
         // Copy request body if present
@@ -219,12 +222,11 @@ public class BffController : ControllerBase
         {
             var streamContent = new StreamContent(Request.Body);
             foreach (var header in Request.Headers)
-            {
                 if (header.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase))
                 {
                     streamContent.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
                 }
-            }
+
             requestMessage.Content = streamContent;
         }
 
@@ -242,7 +244,7 @@ public class BffController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error proxying request to API");
+            logger.LogError(ex, "Error proxying request to API");
             return StatusCode(500, new { error = "proxy_error" });
         }
     }
@@ -259,8 +261,8 @@ public class BffController : ControllerBase
             return Ok(new { authenticated = false });
         }
 
-        var session = await _sessionService.GetSessionAsync(sessionId);
-        
+        var session = await sessionService.GetSessionAsync(sessionId);
+
         return Ok(new { authenticated = session != null });
     }
 
@@ -275,11 +277,13 @@ public class BffController : ControllerBase
             .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
             .GetAndStoreTokens(HttpContext);
 
-        return Ok(new
-        {
-            token = tokens.RequestToken,
-            headerName = "X-CSRF-TOKEN"
-        });
+        return Ok(
+            new
+            {
+                token = tokens.RequestToken,
+                headerName = "X-CSRF-TOKEN"
+            }
+        );
     }
 }
 

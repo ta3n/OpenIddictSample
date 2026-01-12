@@ -6,17 +6,16 @@ namespace OpenIddictSample2.Data;
 /// <summary>
 /// Main database context with OpenIddict integration
 /// </summary>
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext(
+    DbContextOptions<ApplicationDbContext> options
+) : DbContext(options)
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
-    {
-    }
-
     public DbSet<ApplicationUser> Users { get; set; }
     public DbSet<Tenant> Tenants { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder
+    )
     {
         base.OnModelCreating(modelBuilder);
 
@@ -24,19 +23,23 @@ public class ApplicationDbContext : DbContext
         modelBuilder.UseOpenIddict();
 
         // User configuration
-        modelBuilder.Entity<ApplicationUser>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Username).IsUnique();
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.TenantId);
-        });
+        modelBuilder.Entity<ApplicationUser>(
+            entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.TenantId);
+            }
+        );
 
         // Tenant configuration
-        modelBuilder.Entity<Tenant>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Domain).IsUnique();
-        });
+        modelBuilder.Entity<Tenant>(
+            entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Domain).IsUnique();
+            }
+        );
     }
 }

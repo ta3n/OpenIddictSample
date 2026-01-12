@@ -1,21 +1,20 @@
-﻿version: '3.8'
-
-services:
-  # SQL Server for OpenIddict data storage
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: openiddict_sqlserver
+﻿services:
+  # PostgreSQL for OpenIddict data storage
+  postgres:
+    image: postgres:16-alpine
+    container_name: openiddict_postgres
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourPassword123!
+      - POSTGRES_DB=OpenIddictSample
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourPassword123!
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - openiddict_network
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-U", "sa", "-P", "YourPassword123!", "-Q", "SELECT 1"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,7 +31,7 @@ services:
       - openiddict_network
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -50,10 +49,10 @@ services:
   #   environment:
   #     - ASPNETCORE_ENVIRONMENT=Development
   #     - ASPNETCORE_URLS=https://+:8081;http://+:8080
-  #     - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=OpenIddictSample;User Id=sa;Password=YourPassword123!;TrustServerCertificate=True
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=OpenIddictSample;Username=postgres;Password=YourPassword123!
   #     - ConnectionStrings__Redis=redis:6379
   #   depends_on:
-  #     sqlserver:
+  #     postgres:
   #       condition: service_healthy
   #     redis:
   #       condition: service_healthy
@@ -65,6 +64,6 @@ networks:
     driver: bridge
 
 volumes:
-  sqlserver_data:
+  postgres_data:
   redis_data:
 

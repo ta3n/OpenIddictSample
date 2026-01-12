@@ -3,6 +3,7 @@
 ## Tổng Quan
 
 BFF pattern được triển khai để tăng cường bảo mật cho SPAs và Mobile Apps bằng cách:
+
 - 🔒 Lưu tokens ở server-side (không expose cho frontend)
 - 🍪 Sử dụng secure HTTP-only cookies cho session
 - 🛡️ Proxy API calls để thêm access token tự động
@@ -19,6 +20,7 @@ BFF pattern được triển khai để tăng cường bảo mật cho SPAs và 
 ```
 
 **Flow:**
+
 1. Frontend gọi BFF endpoints (không cần handle tokens)
 2. BFF lưu tokens trong Redis session
 3. BFF proxy requests đến Backend APIs với access token
@@ -27,6 +29,7 @@ BFF pattern được triển khai để tăng cường bảo mật cho SPAs và 
 ## 🚀 Endpoints
 
 ### 1. Login
+
 ```http
 POST /bff/login
 Content-Type: application/json
@@ -39,6 +42,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -52,17 +56,20 @@ Content-Type: application/json
 ```
 
 **Set-Cookie:**
+
 ```
 bff_session=<session_id>; HttpOnly; Secure; SameSite=Strict
 ```
 
 ### 2. Get Current User
+
 ```http
 GET /bff/user
 Cookie: bff_session=<session_id>
 ```
 
 **Response:**
+
 ```json
 {
   "userId": "...",
@@ -74,12 +81,14 @@ Cookie: bff_session=<session_id>
 ```
 
 ### 3. Check Authentication
+
 ```http
 GET /bff/auth/check
 Cookie: bff_session=<session_id>
 ```
 
 **Response:**
+
 ```json
 {
   "authenticated": true
@@ -87,12 +96,14 @@ Cookie: bff_session=<session_id>
 ```
 
 ### 4. Logout
+
 ```http
 POST /bff/logout
 Cookie: bff_session=<session_id>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true
@@ -100,6 +111,7 @@ Cookie: bff_session=<session_id>
 ```
 
 ### 5. API Proxy
+
 Tất cả requests đến backend API đều proxy qua BFF:
 
 ```http
@@ -108,11 +120,13 @@ Cookie: bff_session=<session_id>
 ```
 
 BFF tự động:
+
 - Thêm `Authorization: Bearer <access_token>` header
 - Refresh token nếu cần
 - Forward request đến `/api/resource/me`
 
 **Supports all HTTP methods:**
+
 - GET /bff/api/{path}
 - POST /bff/api/{path}
 - PUT /bff/api/{path}
@@ -120,11 +134,13 @@ BFF tự động:
 - PATCH /bff/api/{path}
 
 ### 6. Get Anti-forgery Token
+
 ```http
 GET /bff/antiforgery
 ```
 
 **Response:**
+
 ```json
 {
   "token": "<csrf_token>",
@@ -133,6 +149,7 @@ GET /bff/antiforgery
 ```
 
 Sử dụng token này cho POST/PUT/DELETE requests:
+
 ```http
 POST /bff/api/something
 X-CSRF-TOKEN: <csrf_token>
@@ -163,11 +180,11 @@ class BffApiClient {
     const response = await fetch(`${API_BASE}/user`, {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       throw new Error('Not authenticated');
     }
-    
+
     return response.json();
   }
 
@@ -198,13 +215,13 @@ class BffApiClient {
         'Content-Type': 'application/json'
       }
     });
-    
+
     if (response.status === 401) {
       // Session expired, redirect to login
       window.location.href = '/login';
       throw new Error('Session expired');
     }
-    
+
     return response.json();
   }
 
@@ -220,7 +237,7 @@ class BffApiClient {
   // POST with CSRF protection
   async postWithCsrf(path: string, body: any) {
     const csrfToken = await this.getCsrfToken();
-    
+
     return fetch(`${API_BASE}/api/${path}`, {
       method: 'POST',
       credentials: 'include',
@@ -245,10 +262,10 @@ import { api } from './api';
 function LoginComponent() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const result = await api.login(username, password, 'tenant1');
-      
+
       if (result.success) {
         // Redirect to dashboard
         window.location.href = '/dashboard';
@@ -280,7 +297,7 @@ function DashboardComponent() {
   useEffect(() => {
     // Get current user
     api.getCurrentUser().then(setUser);
-    
+
     // Fetch protected data through BFF proxy
     api.callApi('resource/data').then(setData);
   }, []);
@@ -333,6 +350,7 @@ function ProtectedRoute({ children }) {
 ## 🔧 Configuration
 
 ### appsettings.json
+
 ```json
 {
   "OpenIddict": {
@@ -344,6 +362,7 @@ function ProtectedRoute({ children }) {
 ```
 
 ### CORS Configuration
+
 Thêm origin của frontend SPA vào `Program.cs`:
 
 ```csharp
@@ -356,19 +375,23 @@ policy.WithOrigins(
 ## 🛡️ Security Features
 
 ### 1. HTTP-Only Cookies
+
 ```
 Set-Cookie: bff_session=...; HttpOnly; Secure; SameSite=Strict
 ```
+
 - `HttpOnly`: JavaScript không thể access
 - `Secure`: Chỉ gửi qua HTTPS
 - `SameSite=Strict`: CSRF protection
 
 ### 2. CSRF Protection
+
 ```http
 X-CSRF-TOKEN: <token_from_/bff/antiforgery>
 ```
 
 ### 3. Security Headers
+
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
 - `X-XSS-Protection: 1; mode=block`
@@ -376,12 +399,16 @@ X-CSRF-TOKEN: <token_from_/bff/antiforgery>
 - `Referrer-Policy: strict-origin-when-cross-origin`
 
 ### 4. Automatic Token Refresh
+
 BFF tự động refresh access token khi:
+
 - Token sắp expire (còn < 5 phút)
 - Token đã expire
 
 ### 5. Session Management
+
 Sessions được lưu trong Redis với:
+
 - Auto expiration (12 hours)
 - Last accessed time tracking
 - Automatic cleanup
@@ -389,6 +416,7 @@ Sessions được lưu trong Redis với:
 ## 📊 Session Storage
 
 **Redis Structure:**
+
 ```
 bff_session:<session_id> -> {
   userId: string,
@@ -409,6 +437,7 @@ bff_session:<session_id> -> {
 ### Frontend Error Responses
 
 **401 Unauthorized:**
+
 ```json
 {
   "error": "no_session"
@@ -418,9 +447,11 @@ bff_session:<session_id> -> {
   "error": "session_expired"
 }
 ```
+
 → Redirect to login page
 
 **400 Bad Request:**
+
 ```json
 {
   "error": "invalid_tenant"
@@ -428,6 +459,7 @@ bff_session:<session_id> -> {
 ```
 
 **500 Internal Server Error:**
+
 ```json
 {
   "error": "proxy_error"
@@ -437,6 +469,7 @@ bff_session:<session_id> -> {
 ## 🧪 Testing với Postman
 
 ### 1. Login
+
 ```
 POST https://localhost:5001/bff/login
 Body:
@@ -450,18 +483,21 @@ Body:
 **Save the cookie** từ response.
 
 ### 2. Get User Info
+
 ```
 GET https://localhost:5001/bff/user
 Cookie: bff_session=<saved_from_login>
 ```
 
 ### 3. Call Protected API
+
 ```
 GET https://localhost:5001/bff/api/resource/me
 Cookie: bff_session=<saved_from_login>
 ```
 
 ### 4. Logout
+
 ```
 POST https://localhost:5001/bff/logout
 Cookie: bff_session=<saved_from_login>
@@ -470,21 +506,25 @@ Cookie: bff_session=<saved_from_login>
 ## 📈 Benefits
 
 ✅ **Enhanced Security:**
+
 - Tokens never exposed to frontend
 - XSS attacks can't steal tokens
 - HTTP-only cookies
 
 ✅ **Simplified Frontend:**
+
 - No token management needed
 - No refresh logic required
 - Just use cookies
 
 ✅ **Centralized Auth:**
+
 - All auth logic in one place
 - Easy to update/maintain
 - Consistent across all frontends
 
 ✅ **Better UX:**
+
 - Automatic token refresh
 - Seamless session management
 - No "token expired" errors to user
@@ -492,6 +532,7 @@ Cookie: bff_session=<saved_from_login>
 ## 🔄 Migration from Token-based to BFF
 
 **Before (Token-based):**
+
 ```typescript
 // Frontend stores tokens
 localStorage.setItem('access_token', token);
@@ -510,6 +551,7 @@ if (isTokenExpired(token)) {
 ```
 
 **After (BFF):**
+
 ```typescript
 // No token handling needed!
 fetch('/bff/api/data', {
@@ -528,6 +570,7 @@ fetch('/bff/api/data', {
 ---
 
 **Lưu ý:** Đây là implementation cơ bản. Trong production, cần:
+
 - Integrate với actual OAuth flow thay vì dummy tokens
 - Thêm rate limiting
 - Thêm logging và monitoring

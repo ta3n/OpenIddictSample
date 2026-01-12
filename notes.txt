@@ -1,0 +1,22 @@
+# Step 1: Login và lưu cookie
+
+curl -v --cookie-jar cookies.txt \
+'https://localhost:7168/Account/Login' \
+--header 'X-Tenant-ID: tenant1' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data 'username=testuser&password=Test123!'
+
+# Step 2: Authorize với cookie đã login
+
+curl -v --cookie cookies.txt \
+'https://localhost:7168/connect/authorize?client_id=postman-client&redirect_uri=https%3A%2F%2Foauth.pstmn.io%2Fv1%2Fcallback&response_type=code&scope=openid%20profile%20email&state=xyz123' \
+--header 'X-Tenant-ID: tenant1' 2>&1 | grep -i location
+
+# Step 3: Get access & refresh tokens
+curl --location 'https://localhost:7168/connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'grant_type=authorization_code' \
+--data-urlencode 'client_id=postman-client' \
+--data-urlencode 'client_secret=postman-secret' \
+--data-urlencode 'code=eyJhbGci...[YOUR_CODE_HERE]' \
+--data-urlencode 'redirect_uri=https://oauth.pstmn.io/v1/callback'

@@ -15,28 +15,29 @@ namespace OpenIddictSample2.Controllers;
 /// Account management controller
 /// Handles login, registration, and user management
 /// </summary>
-public class AccountController : Controller
+public class AccountController(
+    ApplicationDbContext context,
+    ITenantService tenantService
+) : Controller
 {
-    private readonly ApplicationDbContext _context;
-    private readonly ITenantService _tenantService;
-
-    public AccountController(ApplicationDbContext context, ITenantService tenantService)
-    {
-        _context = context;
-        _tenantService = tenantService;
-    }
-
     [HttpGet]
-    public IActionResult Login(string? returnUrl = null)
+    public IActionResult Login(
+        string? returnUrl = null
+    )
     {
         ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
 
     [HttpPost]
-    public async Task<IActionResult> Login(string username, string password, string? returnUrl = null)
+    [IgnoreAntiforgeryToken] // Allow testing via Postman
+    public async Task<IActionResult> Login(
+        string username,
+        string password,
+        string? returnUrl = null
+    )
     {
-        var tenantId = _tenantService.GetCurrentTenantId();
+        var tenantId = tenantService.GetCurrentTenantId();
         if (string.IsNullOrEmpty(tenantId))
         {
             ModelState.AddModelError("", "Tenant ID is required");
@@ -44,7 +45,7 @@ public class AccountController : Controller
         }
 
         // Find user by username and tenant
-        var user = await _context.Users
+        var user = await context.Users
             .FirstOrDefaultAsync(u => u.Username == username && u.TenantId == tenantId);
 
         if (user == null || !VerifyPassword(password, user.PasswordHash))
@@ -56,10 +57,10 @@ public class AccountController : Controller
         // Create claims
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim("tenant_id", user.TenantId)
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Name, user.Username),
+            new(ClaimTypes.Email, user.Email),
+            new("tenant_id", user.TenantId)
         };
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -72,13 +73,16 @@ public class AccountController : Controller
             {
                 IsPersistent = true,
                 ExpiresUtc = DateTimeOffset.UtcNow.AddHours(12)
-            });
+            }
+        );
 
         // Update last login
         user.LastLoginAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        // Validate and redirect to returnUrl if provided and local
+        if (!string.IsNullOrEmpty(returnUrl) &&
+            (returnUrl.StartsWith('/') || returnUrl.StartsWith("~/")))
         {
             return Redirect(returnUrl);
         }
@@ -93,17 +97,22 @@ public class AccountController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Register(string username, string email, string password, string tenantId)
+    public async Task<IActionResult> Register(
+        string username,
+        string email,
+        string password,
+        string tenantId
+    )
     {
         // Validate tenant
-        if (!await _tenantService.ValidateTenantAsync(tenantId))
+        if (!await tenantService.ValidateTenantAsync(tenantId))
         {
             ModelState.AddModelError("", "Invalid tenant");
             return View();
         }
 
         // Check if username already exists
-        if (await _context.Users.AnyAsync(u => u.Username == username))
+        if (await context.Users.AnyAsync(u => u.Username == username))
         {
             ModelState.AddModelError("", "Username already exists");
             return View();
@@ -118,8 +127,8 @@ public class AccountController : Controller
             TenantId = tenantId
         };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
         return RedirectToAction(nameof(Login));
     }
@@ -131,7 +140,9 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
-    private static string HashPassword(string password)
+    private static string HashPassword(
+        string password
+    )
     {
         using var sha256 = SHA256.Create();
         var bytes = Encoding.UTF8.GetBytes(password);
@@ -139,7 +150,10 @@ public class AccountController : Controller
         return Convert.ToBase64String(hash);
     }
 
-    private static bool VerifyPassword(string password, string hash)
+    private static bool VerifyPassword(
+        string password,
+        string hash
+    )
     {
         return HashPassword(password) == hash;
     }
