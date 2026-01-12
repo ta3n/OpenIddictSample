@@ -9,24 +9,51 @@ namespace OpenIddictSample2.Services;
 /// </summary>
 public interface ITokenStorageService
 {
+    /// <summary>
+    /// Stores a refresh token in the distributed cache with the specified expiration.
+    /// </summary>
+    /// <param name="tokenId">The unique identifier for the refresh token.</param>
+    /// <param name="data">The refresh token data to store.</param>
+    /// <param name="expiration">The time span after which the token expires.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task StoreRefreshTokenAsync(
         string tokenId,
         RefreshTokenData data,
         TimeSpan expiration
     );
 
+    /// <summary>
+    /// Retrieves refresh token data from the distributed cache.
+    /// </summary>
+    /// <param name="tokenId">The unique identifier for the refresh token.</param>
+    /// <returns>A task representing the asynchronous operation, containing the refresh token data if found; otherwise, null.</returns>
     Task<RefreshTokenData?> GetRefreshTokenAsync(
         string tokenId
     );
 
+    /// <summary>
+    /// Revokes a refresh token by removing it from storage and marking it as revoked.
+    /// </summary>
+    /// <param name="tokenId">The unique identifier for the refresh token to revoke.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task RevokeRefreshTokenAsync(
         string tokenId
     );
 
+    /// <summary>
+    /// Revokes all refresh tokens associated with a specific user.
+    /// </summary>
+    /// <param name="userId">The unique identifier for the user whose tokens should be revoked.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task RevokeAllTokensForUserAsync(
         string userId
     );
 
+    /// <summary>
+    /// Checks whether a refresh token has been revoked.
+    /// </summary>
+    /// <param name="tokenId">The unique identifier for the refresh token.</param>
+    /// <returns>A task representing the asynchronous operation, containing true if the token is revoked; otherwise, false.</returns>
     Task<bool> IsTokenRevokedAsync(
         string tokenId
     );

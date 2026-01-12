@@ -9,24 +9,48 @@ namespace OpenIddictSample2.Services;
 /// </summary>
 public interface IBffSessionService
 {
+    /// <summary>
+    /// Retrieves a BFF session by its session ID.
+    /// </summary>
+    /// <param name="sessionId">The unique identifier for the session.</param>
+    /// <returns>The BFF session if found; otherwise, null.</returns>
     Task<BffSession?> GetSessionAsync(
         string sessionId
     );
 
+    /// <summary>
+    /// Creates a new BFF session with the specified session ID and data.
+    /// </summary>
+    /// <param name="sessionId">The unique identifier for the session.</param>
+    /// <param name="session">The session data to store.</param>
     Task CreateSessionAsync(
         string sessionId,
         BffSession session
     );
 
+    /// <summary>
+    /// Updates an existing BFF session with new data.
+    /// </summary>
+    /// <param name="sessionId">The unique identifier for the session.</param>
+    /// <param name="session">The updated session data.</param>
     Task UpdateSessionAsync(
         string sessionId,
         BffSession session
     );
 
+    /// <summary>
+    /// Deletes a BFF session by its session ID.
+    /// </summary>
+    /// <param name="sessionId">The unique identifier for the session to delete.</param>
     Task DeleteSessionAsync(
         string sessionId
     );
 
+    /// <summary>
+    /// Refreshes the access token for a session using the refresh token.
+    /// </summary>
+    /// <param name="sessionId">The unique identifier for the session.</param>
+    /// <returns>True if the tokens were successfully refreshed; otherwise, false.</returns>
     Task<bool> RefreshSessionTokensAsync(
         string sessionId
     );

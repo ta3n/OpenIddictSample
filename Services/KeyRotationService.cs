@@ -10,14 +10,29 @@ namespace OpenIddictSample2.Services;
 /// </summary>
 public interface IKeyRotationService
 {
+    /// <summary>
+    /// Gets the current signing key for the specified tenant.
+    /// </summary>
+    /// <param name="tenantId">The tenant identifier. If null, the default tenant is used.</param>
+    /// <returns>The current signing credentials.</returns>
     Task<SigningCredentials> GetCurrentSigningKeyAsync(
         string? tenantId = null
     );
 
+    /// <summary>
+    /// Gets all validation keys for the specified tenant, including expired keys within the grace period.
+    /// </summary>
+    /// <param name="tenantId">The tenant identifier. If null, the default tenant is used.</param>
+    /// <returns>A collection of security keys that can be used for token validation.</returns>
     Task<IEnumerable<SecurityKey>> GetValidationKeysAsync(
         string? tenantId = null
     );
 
+    /// <summary>
+    /// Rotates the signing key for the specified tenant by generating and storing a new key.
+    /// </summary>
+    /// <param name="tenantId">The tenant identifier. If null, the default tenant is used.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task RotateKeysAsync(
         string? tenantId = null
     );

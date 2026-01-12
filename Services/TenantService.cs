@@ -8,8 +8,18 @@ namespace OpenIddictSample2.Services;
 /// </summary>
 public interface ITenantService
 {
+    /// <summary>
+    /// Gets the current tenant ID from the HTTP context.
+    /// Attempts to retrieve tenant ID from header (X-Tenant-ID), subdomain, or user claims.
+    /// </summary>
+    /// <returns>The tenant ID if found; otherwise, null.</returns>
     string? GetCurrentTenantId();
 
+    /// <summary>
+    /// Validates whether a tenant exists and is active.
+    /// </summary>
+    /// <param name="tenantId">The tenant ID to validate.</param>
+    /// <returns>True if the tenant exists and is active; otherwise, false.</returns>
     Task<bool> ValidateTenantAsync(
         string tenantId
     );
