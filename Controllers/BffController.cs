@@ -207,7 +207,7 @@ public class BffController(
         var apiBaseUrl = Request.Scheme + "://" + Request.Host;
         var targetUrl = $"{apiBaseUrl}/api/{path}";
 
-        var requestMessage = new HttpRequestMessage
+        using var requestMessage = new HttpRequestMessage
         {
             Method = new HttpMethod(Request.Method),
             RequestUri = new Uri(targetUrl)
