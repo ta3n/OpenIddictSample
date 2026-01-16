@@ -1,26 +1,26 @@
-# OpenIddict Sample 2 - Hướng Dẫn Chi Tiết
+# OpenIddict Sample - Detailed Guide
 
-Dự án này triển khai đầy đủ các tính năng OAuth 2.0 và OpenID Connect sử dụng OpenIddict, bao gồm:
+This project fully implements OAuth 2.0 and OpenID Connect features using OpenIddict, including:
 
-## 🎯 Các Tính Năng Đã Triển Khai
+## 🎯 Features Implemented
 
 ### 1. **Authorization Code Flow** ✅
 
-Authorization Code Flow là luồng OAuth 2.0 được khuyến nghị cho các ứng dụng web server-side.
+Authorization Code Flow is the recommended OAuth 2.0 flow for server-side web applications.
 
-**Cách hoạt động:**
+**How it works:**
 
-1. Client chuyển hướng user đến `/connect/authorize`
-2. User đăng nhập và xác thực (qua Cookie Authentication)
-3. Server tạo authorization code và redirect về client
-4. Client đổi authorization code lấy access token tại `/connect/token`
+1. The client redirects the user to `/connect/authorize`
+2. The user logs in and authenticates (via Cookie Authentication)
+3. The server generates an authorization code and redirects back to the client
+4. The client exchanges the authorization code for an access token at `/connect/token`
 
 **Endpoint:**
 
 - Authorization: `GET/POST /connect/authorize`
 - Token: `POST /connect/token`
 
-**Ví dụ request:**
+**Example request:**
 
 ```http
 GET /connect/authorize?
@@ -36,16 +36,16 @@ Header: X-Tenant-ID: tenant1
 
 ### 2. **Refresh Token Rotation** ✅
 
-Refresh Token Rotation tăng cường bảo mật bằng cách tạo refresh token mới mỗi lần sử dụng.
+Refresh Token Rotation enhances security by generating a new refresh token each time it is used.
 
-**Cách hoạt động:**
+**How it works:**
 
-1. Client sử dụng refresh token để lấy access token mới
-2. Server revoke refresh token cũ ngay lập tức
-3. Server tạo và trả về refresh token mới kèm access token
-4. Token mới được lưu trong Redis với metadata rotation
+1. The client uses the refresh token to obtain a new access token
+2. The server immediately revokes the old refresh token
+3. The server generates and returns a new refresh token along with the access token
+4. The new token is stored in Redis with rotation metadata
 
-**Code implementation:** Xem `AuthorizationController.HandleRefreshTokenAsync()`
+**Code implementation:** See `AuthorizationController.HandleRefreshTokenAsync()`
 
 **Redis storage structure:**
 
@@ -58,7 +58,7 @@ refresh_token:{token_id} -> {
 }
 ```
 
-**Ví dụ request:**
+**Example request:**
 
 ```http
 POST /connect/token
@@ -72,20 +72,20 @@ grant_type=refresh_token
 
 ### 3. **Logout / Revoke** ✅
 
-Hỗ trợ đăng xuất và thu hồi token.
+Supports user logout and token revocation.
 
 **Logout Endpoint:**
 
 - URL: `GET/POST /connect/logout`
-- Chức năng: Sign out user, revoke tất cả refresh tokens của user
-- Redirect về `post_logout_redirect_uri`
+- Functionality: Signs out the user, revokes all the user's refresh tokens
+- Redirects to `post_logout_redirect_uri`
 
 **Revoke Endpoint:**
 
 - URL: `POST /connect/revoke`
-- Chức năng: Thu hồi một token cụ thể (access hoặc refresh token)
+- Functionality: Revokes a specific token (access or refresh token)
 
-**Ví dụ:**
+**Example:**
 
 ```http
 POST /connect/revoke
@@ -98,16 +98,16 @@ token={refresh_token_to_revoke}
 
 ### 4. **Redis-backed Token Storage** ✅
 
-Tất cả refresh tokens được lưu trong Redis thay vì database.
+All refresh tokens are stored in Redis instead of a database.
 
-**Lợi ích:**
+**Benefits:**
 
-- ⚡ Hiệu suất cao (in-memory cache)
-- 🔄 Hỗ trợ token rotation và revocation nhanh
-- 📊 Tự động expiration dựa vào TTL của Redis
-- 🗑️ Dễ dàng xóa tokens khi cần
+- ⚡ High performance (in-memory cache)
+- 🔄 Supports fast token rotation and revocation
+- 📊 Automatic expiration based on Redis TTL
+- 🗑️ Easy token deletion when needed
 
-**Service:** `TokenStorageService` trong [Services/TokenStorageService.cs](Services/TokenStorageService.cs)
+**Service:** `TokenStorageService` in [Services/TokenStorageService.cs](Services/TokenStorageService.cs)
 
 **Redis Keys:**
 
@@ -119,21 +119,21 @@ revoked:{token_id}              # Revoked token blacklist
 
 ### 5. **Multi-Tenant Isolation** ✅
 
-Hỗ trợ nhiều tenant với cách ly dữ liệu hoàn toàn.
+Supports multiple tenants with complete data isolation.
 
-**Cách xác định Tenant:**
+**How to identify Tenant:**
 
 1. **Header:** `X-Tenant-ID: tenant1`
 2. **Subdomain:** `tenant1.yourdomain.com` (subdomain = tenant ID)
-3. **Claims:** `tenant_id` trong JWT token
+3. **Claims:** `tenant_id` in the JWT token
 
 **Tenant validation:**
 
-- Mỗi user thuộc về một tenant cụ thể
-- Authorization request phải chỉ định tenant ID
-- User chỉ có thể access resources trong tenant của mình
+- Each user belongs to a specific tenant
+- Authorization requests must specify the tenant ID
+- Users can only access resources within their tenant
 
-**Code implementation:** Xem `TenantService` trong [Services/TenantService.cs](Services/TenantService.cs)
+**Code implementation:** See `TenantService` in [Services/TenantService.cs](Services/TenantService.cs)
 
 **Database schema:**
 
@@ -147,17 +147,17 @@ TenantId, Name, Domain, IsActive, SigningKeyId
 
 ### 6. **Key Rollover & JWKS Rotation** ✅
 
-Tự động rotation signing keys để tăng cường bảo mật.
+Automatically rotates signing keys to enhance security.
 
-**Cách hoạt động:**
+**How it works:**
 
-1. Mỗi tenant có thể có signing key riêng
-2. Keys được lưu trong Redis với expiration (90 days)
-3. Khi key sắp hết hạn, system tự động tạo key mới
-4. Giữ lại keys cũ trong grace period (30 days) để validate old tokens
-5. JWKS endpoint trả về tất cả valid keys
+1. Each tenant can have its own signing key
+2. Keys are stored in Redis with expiration (90 days)
+3. When a key is about to expire, the system automatically generates a new key
+4. Old keys are retained during a grace period (30 days) to validate old tokens
+5. The JWKS endpoint returns all valid keys
 
-**Service:** `KeyRotationService` trong [Services/KeyRotationService.cs](Services/KeyRotationService.cs)
+**Service:** `KeyRotationService` in [Services/KeyRotationService.cs](Services/KeyRotationService.cs)
 
 **Key lifecycle:**
 
@@ -173,10 +173,10 @@ Day 120: Key A expired, remove from JWKS
 await keyRotationService.RotateKeysAsync("tenant1");
 ```
 
-## 🏗️ Kiến Trúc Dự Án
+## 🏗️ Project Architecture
 
 ```
-OpenIddictSample2/
+OpenIddictSample/
 ├── Controllers/
 │   ├── AuthorizationController.cs  # OAuth endpoints
 │   ├── AccountController.cs        # Login/Register
@@ -193,20 +193,20 @@ OpenIddictSample2/
 └── Program.cs                     # Configuration
 ```
 
-## 🚀 Cách Chạy Dự Án
+## 🚀 How to Run the Project
 
-### Yêu Cầu:
+### Requirements:
 
 - .NET 8.0 SDK
-- PostgreSQL (hoặc Docker)
+- PostgreSQL (or Docker)
 - Redis Server
 
-### Bước 1: Cài đặt Redis
+### Step 1: Install Redis
 
 **Windows:**
 
 ```powershell
-# Sử dụng Windows Subsystem for Linux (WSL) hoặc Docker
+# Use Windows Subsystem for Linux (WSL) or Docker
 docker run -d -p 6379:6379 --name redis redis:latest
 ```
 
@@ -224,9 +224,9 @@ sudo apt-get install redis-server
 sudo systemctl start redis
 ```
 
-### Bước 2: Cấu hình Connection Strings
+### Step 2: Configure Connection Strings
 
-Chỉnh sửa `appsettings.json`:
+Edit `appsettings.json`:
 
 ```json
 {
@@ -237,7 +237,7 @@ Chỉnh sửa `appsettings.json`:
 }
 ```
 
-### Bước 3: Restore Packages và Chạy
+### Step 3: Restore Packages and Run
 
 ```bash
 dotnet restore
@@ -245,18 +245,18 @@ dotnet build
 dotnet run
 ```
 
-Server sẽ chạy tại: `https://localhost:5001`
+The server will run at: `https://localhost:5001`
 
-### Bước 4: Seed Data
+### Step 4: Seed Data
 
-Khi chạy lần đầu, dự án tự động:
+On the first run, the project automatically:
 
-- Tạo database
-- Seed tenant mặc định (`tenant1`)
-- Tạo OAuth client (`postman-client`)
-- Tạo scopes (`api`, `email`, `profile`)
+- Creates the database
+- Seeds a default tenant (`tenant1`)
+- Creates an OAuth client (`postman-client`)
+- Creates scopes (`api`, `email`, `profile`)
 
-## 🧪 Testing với Postman
+## 🧪 Testing with Postman
 
 ### 1. Test Authorization Code Flow
 
@@ -332,14 +332,14 @@ Headers:
   Cookie: {your_auth_cookie}
 ```
 
-## 🔐 Bảo Mật Best Practices
+## 🔐 Security Best Practices
 
 ### 1. Production Configuration
 
-Trong production, **không sử dụng** development certificates:
+In production, **do not use** development certificates:
 
 ```csharp
-// ❌ CHỈ dùng trong Development
+// ❌ ONLY for Development
 options.AddDevelopmentEncryptionCertificate()
        .AddDevelopmentSigningCertificate();
 
@@ -347,7 +347,7 @@ options.AddDevelopmentEncryptionCertificate()
 options.AddEncryptionCertificate(cert)
        .AddSigningCertificate(cert);
 
-// HOẶC sử dụng Key Rotation Service
+// OR use the Key Rotation Service
 var signingKey = await keyRotationService.GetCurrentSigningKeyAsync(tenantId);
 options.AddSigningCredentials(signingKey);
 ```
@@ -364,23 +364,23 @@ options.AddSigningCredentials(signingKey);
 
 ### 3. Tenant Isolation Checklist
 
-- ✅ Validate tenant ID trong mọi request
-- ✅ Filter data theo tenant trong queries
-- ✅ Include tenant_id trong JWT claims
+- ✅ Validate tenant ID in every request
+- ✅ Filter data by tenant in queries
+- ✅ Include tenant_id in JWT claims
 - ✅ Separate signing keys per tenant (optional)
 
 ### 4. Token Security
 
-- ✅ Sử dụng HTTPS only
-- ✅ Short-lived access tokens (15-30 phút)
-- ✅ Longer-lived refresh tokens (7-30 ngày)
+- ✅ Use HTTPS only
+- ✅ Short-lived access tokens (15-30 minutes)
+- ✅ Longer-lived refresh tokens (7-30 days)
 - ✅ Enable refresh token rotation
-- ✅ Revoke tokens khi logout
-- ✅ Store tokens securely (Redis với encryption)
+- ✅ Revoke tokens on logout
+- ✅ Store tokens securely (Redis with encryption)
 
-## 📚 Các Endpoint Chính
+## 📚 Key Endpoints
 
-| Endpoint             | Method   | Mô Tả                       |
+| Endpoint             | Method   | Description                 |
 |----------------------|----------|-----------------------------|
 | `/connect/authorize` | GET/POST | Authorization Code endpoint |
 | `/connect/token`     | POST     | Token exchange endpoint     |
@@ -402,20 +402,19 @@ redis-cli ping
 
 ### Issue: "Database connection failed"
 
-- Kiểm tra SQL Server đang chạy
-- Verify connection string trong appsettings.json
+- Check if the SQL Server is running
+- Verify the connection string in appsettings.json
 - Check firewall settings
 
 ### Issue: "Invalid tenant"
 
-- Đảm bảo gửi header `X-Tenant-ID` trong request
-- Verify tenant exists trong database
-- Check tenant IsActive = true
+- Ensure the `X-Tenant-ID` header is sent in the request
+- Verify the tenant exists in the database
+- Check if the tenant IsActive = true
 
-## 📖 Tài Liệu Tham Khảo
+## 📖 References
 
 - [OpenIddict Documentation](https://documentation.openiddict.com/)
 - [OAuth 2.0 RFC 6749](https://tools.ietf.org/html/rfc6749)
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [Refresh Token Rotation](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation)
-

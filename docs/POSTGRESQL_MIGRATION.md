@@ -1,8 +1,8 @@
-# 🔄 Migration từ SQL Server sang PostgreSQL
+# 🔄 Migration from SQL Server to PostgreSQL
 
-## ✅ Đã Hoàn Thành
+## ✅ Completed
 
-Project đã được chuyển từ SQL Server sang PostgreSQL với các thay đổi sau:
+The project has been migrated from SQL Server to PostgreSQL with the following changes:
 
 ### 📦 Package Changes
 
@@ -20,7 +20,7 @@ Project đã được chuyển từ SQL Server sang PostgreSQL với các thay �
 
 ### 🔧 Configuration Changes
 
-**appsettings.json:**
+**`appsettings.json`:**
 
 ```json
 {
@@ -30,7 +30,7 @@ Project đã được chuyển từ SQL Server sang PostgreSQL với các thay �
 }
 ```
 
-**Program.cs:**
+**`Program.cs`:**
 
 ```csharp
 // Before
@@ -42,22 +42,22 @@ options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
 
 ### 🐳 Docker Compose Changes
 
-**compose.yaml:**
+**`compose.yaml`:**
 
-- Replaced SQL Server container với PostgreSQL
+- Replaced SQL Server container with PostgreSQL
 - Port: `1433` → `5432`
 - Container name: `openiddict_sqlserver` → `openiddict_postgres`
 - Volume: `sqlserver_data` → `postgres_data`
 
-## 🚀 Quick Start với PostgreSQL
+## 🚀 Quick Start with PostgreSQL
 
-### 1. Start PostgreSQL và Redis
+### 1. Start PostgreSQL and Redis
 
 ```bash
 docker-compose up -d postgres redis
 ```
 
-Hoặc cài đặt trực tiếp:
+Or install directly:
 
 **macOS (Homebrew):**
 
@@ -74,9 +74,9 @@ sudo systemctl start postgresql
 ```
 
 **Windows:**
-Download và cài đặt từ: https://www.postgresql.org/download/windows/
+Download and install from: https://www.postgresql.org/download/windows/
 
-### 2. Verify PostgreSQL đang chạy
+### 2. Verify PostgreSQL is running
 
 ```bash
 # Check container
@@ -86,17 +86,17 @@ docker ps | grep postgres
 psql -h localhost -U postgres -d postgres
 # Password: YourPassword123!
 
-# Hoặc với Docker
+# Or with Docker
 docker exec -it openiddict_postgres psql -U postgres
 ```
 
-### 3. Chạy Application
+### 3. Run the Application
 
 ```bash
 dotnet run
 ```
 
-Database sẽ tự động được tạo khi app khởi động.
+The database will be automatically created when the app starts.
 
 ## 🔍 PostgreSQL vs SQL Server
 
@@ -123,7 +123,7 @@ Host=localhost;Port=5432;Database=MyDb;Username=postgres;Password=Pass123!
 
 ### Data Type Differences
 
-OpenIddict và EF Core tự động handle các differences, nhưng lưu ý:
+OpenIddict and EF Core automatically handle differences, but note:
 
 | SQL Server       | PostgreSQL |
 |------------------|------------|
@@ -146,7 +146,7 @@ docker run -d \
   dpage/pgadmin4
 ```
 
-Mở: http://localhost:5050
+Open: http://localhost:5050
 
 ### Command Line Tools
 
@@ -162,7 +162,7 @@ docker exec -it openiddict_postgres psql -U postgres -c "\l"
 docker exec -it openiddict_postgres psql -U postgres -d OpenIddictSample
 ```
 
-**Common psql commands:**
+**Common `psql` commands:**
 
 ```sql
 \dt              -- List tables
@@ -172,7 +172,7 @@ docker exec -it openiddict_postgres psql -U postgres -d OpenIddictSample
 
 ## 🔄 Migration Scripts (If Needed)
 
-Nếu bạn cần migrate data từ SQL Server sang PostgreSQL:
+If you need to migrate data from SQL Server to PostgreSQL:
 
 ### Using EF Core Migrations
 
@@ -202,11 +202,11 @@ psql -U postgres -d OpenIddictSample -c "\COPY Users FROM 'users.csv' CSV"
 
 ### Error: "password authentication failed"
 
-Check password trong connection string và Docker environment variables phải match.
+Ensure the password in the connection string matches the Docker environment variables.
 
 ### Error: "database does not exist"
 
-Application sẽ tự động tạo database với `EnsureCreatedAsync()`. Hoặc tạo manual:
+The application will automatically create the database with `EnsureCreatedAsync()`. Or create it manually:
 
 ```bash
 docker exec -it openiddict_postgres psql -U postgres -c "CREATE DATABASE OpenIddictSample;"
@@ -236,7 +236,7 @@ docker exec -it openiddict_postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON
 
 ### 1. Connection Pooling
 
-PostgreSQL connection pooling được enable mặc định với Npgsql.
+PostgreSQL connection pooling is enabled by default with Npgsql.
 
 **Customize pooling:**
 
@@ -246,7 +246,7 @@ Host=localhost;Port=5432;Database=OpenIddictSample;Username=postgres;Password=Pa
 
 ### 2. Indexes
 
-PostgreSQL tự động tạo indexes cho primary keys và unique constraints. OpenIddict đã configure các indexes cần thiết.
+PostgreSQL automatically creates indexes for primary keys and unique constraints. OpenIddict has already configured the necessary indexes.
 
 ### 3. Monitor Performance
 
@@ -272,11 +272,11 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 docker exec -it openiddict_postgres psql -U postgres -c "ALTER USER postgres PASSWORD 'NewStrongPassword123!';"
 ```
 
-Cập nhật trong `appsettings.json` và `compose.yaml`.
+Update in `appsettings.json` and `compose.yaml`.
 
 ### 2. Use Environment Variables
 
-**appsettings.Production.json:**
+**`appsettings.Production.json`:**
 
 ```json
 {
@@ -302,5 +302,4 @@ Host=prod.postgres.com;Port=5432;Database=OpenIddictSample;Username=postgres;Pas
 
 ---
 
-**Note:** Tất cả functionality (Authorization Code Flow, Refresh Token Rotation, Multi-Tenant, BFF, etc.) vẫn hoạt động giống hệt với
-PostgreSQL!
+**Note:** All functionality (Authorization Code Flow, Refresh Token Rotation, Multi-Tenant, BFF, etc.) remains identical with PostgreSQL!
