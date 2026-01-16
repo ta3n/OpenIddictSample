@@ -203,7 +203,7 @@ public class BffController(
         }
 
         // Forward request to actual API
-        var client = new HttpClient();
+        using var client = new HttpClient();
         var apiBaseUrl = Request.Scheme + "://" + Request.Host;
         var targetUrl = $"{apiBaseUrl}/api/{path}";
 
