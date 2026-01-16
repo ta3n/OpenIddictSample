@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BFF Demo - Dashboard</title>
+  <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+
+      body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+          background: #f5f7fa;
+      }
+
+      .navbar {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 20px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .navbar-content {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+      .navbar h1 {
+          font-size: 24px;
+      }
+
+      .user-info {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+      }
+
+      .logout-btn {
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 8px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background 0.3s;
+      }
+
+      .logout-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
+      }
+
+      .container {
+          max-width: 1200px;
+          margin: 40px auto;
+          padding: 0 20px;
+      }
+
+      .card {
+          background: white;
+          border-radius: 10px;
+          padding: 30px;
+          margin-bottom: 20px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h2 {
+          color: #333;
+          margin-bottom: 20px;
+      }
+
+      .user-details {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 15px;
+          margin-bottom: 20px;
+      }
+
+      .detail-item {
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 5px;
+      }
+
+      .detail-label {
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 5px;
+      }
+
+      .detail-value {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+      }
+
+      .actions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+      }
+
+      button {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: transform 0.2s;
+      }
+
+      button:hover {
+          transform: translateY(-2px);
+      }
+
+      .btn-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+      }
+
+      .btn-secondary {
+          background: #6c757d;
+          color: white;
+      }
+
+      .api-result {
+          margin-top: 20px;
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 5px;
+          border-left: 4px solid #667eea;
+      }
+
+      .api-result pre {
+          margin-top: 10px;
+          padding: 10px;
+          background: #fff;
+          border-radius: 3px;
+          overflow-x: auto;
+          font-size: 12px;
+      }
+
+      .loading {
+          display: inline-block;
+          width: 20px;
+          height: 20px;
+          border: 3px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          border-top-color: #fff;
+          animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+          to {
+              transform: rotate(360deg);
+          }
+      }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-content">
+    <h1>🚀 BFF Dashboard</h1>
+    <div class="user-info">
+      <span id="userDisplay">Loading...</span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="card">
+    <h2>User Information</h2>
+    <div class="user-details" id="userDetails">
+      <div class="detail-item">
+        <div class="detail-label">User ID</div>
+        <div class="detail-value" id="userId">-</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Username</div>
+        <div class="detail-value" id="username">-</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Email</div>
+        <div class="detail-value" id="email">-</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Tenant ID</div>
+        <div class="detail-value" id="tenantId">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>API Tests (through BFF Proxy)</h2>
+    <p style="color: #666; margin-bottom: 20px;">
+      These buttons call protected API endpoints through the BFF proxy.
+      The BFF automatically adds your access token to the requests.
+    </p>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="callProtectedApi('/resource/me')">
+        Get My Info (API)
+      </button>
+      <button class="btn-primary" onclick="callProtectedApi('/resource/data')">
+        Get Protected Data
+      </button>
+      <button class="btn-primary" onclick="callProtectedApi('/resource/tenant-data')">
+        Get Tenant Data
+      </button>
+      <button class="btn-secondary" onclick="checkAuthStatus()">
+        Check Auth Status
+      </button>
+    </div>
+
+    <div id="apiResult" class="api-result" style="display: none;">
+      <strong>API Response:</strong>
+      <pre id="apiOutput"></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>How It Works</h2>
+    <ul style="line-height: 1.8; color: #555;">
+      <li>✅ Your tokens are stored securely on the server (Redis)</li>
+      <li>✅ Only secure HTTP-only cookies are sent to your browser</li>
+      <li>✅ The BFF automatically refreshes expired tokens</li>
+      <li>✅ All API calls are proxied through BFF with automatic token injection</li>
+      <li>✅ Protected against XSS attacks (tokens never exposed to JavaScript)</li>
+      <li>✅ CSRF protection enabled</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+    const API_BASE = 'https://localhost:5001/bff';
+
+    // Check authentication on page load
+    window.addEventListener('load', async () => {
+        const isAuth = await checkAuth();
+        if (!isAuth) {
+            window.location.href = 'bff-demo-login.html';
+            return;
+        }
+
+        loadUserInfo();
+    });
+
+    async function checkAuth() {
+        try {
+            const response = await fetch(`${API_BASE}/auth/check`, {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data.authenticated;
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            return false;
+        }
+    }
+
+    async function loadUserInfo() {
+        try {
+            const response = await fetch(`${API_BASE}/user`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                window.location.href = 'bff-demo-login.html';
+                return;
+            }
+
+            const user = await response.json();
+
+            document.getElementById('userDisplay').textContent = user.username;
+            document.getElementById('userId').textContent = user.userId;
+            document.getElementById('username').textContent = user.username;
+            document.getElementById('email').textContent = user.email;
+            document.getElementById('tenantId').textContent = user.tenantId;
+        } catch (error) {
+            console.error('Failed to load user info:', error);
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch(`${API_BASE}/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            window.location.href = 'bff-demo-login.html';
+        } catch (error) {
+            console.error('Logout failed:', error);
+            alert('Logout failed: ' + error.message);
+        }
+    }
+
+    async function callProtectedApi(path) {
+        const resultDiv = document.getElementById('apiResult');
+        const outputPre = document.getElementById('apiOutput');
+
+        resultDiv.style.display = 'block';
+        outputPre.textContent = 'Loading...';
+
+        try {
+            const response = await fetch(`${API_BASE}/api${path}`, {
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            outputPre.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            outputPre.textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function checkAuthStatus() {
+        const resultDiv = document.getElementById('apiResult');
+        const outputPre = document.getElementById('apiOutput');
+
+        resultDiv.style.display = 'block';
+
+        const isAuth = await checkAuth();
+        outputPre.textContent = JSON.stringify({
+            authenticated: isAuth,
+            timestamp: new Date().toISOString()
+        }, null, 2);
+    }
+</script>
+</body>
+</html>
