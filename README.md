@@ -419,14 +419,3 @@ redis-cli ping
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [Refresh Token Rotation](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation)
 
-## 🤝 Đóng Góp
-
-Nếu bạn có câu hỏi hoặc đề xuất cải tiến, vui lòng tạo issue hoặc pull request.
-
-## 📝 License
-
-MIT License - Free to use and modify.
-
----
-
-**Lưu ý:** Đây là sample project cho mục đích học tập. Trong production, cần thêm nhiều lớp bảo mật và xử lý lỗi chi tiết hơn.
