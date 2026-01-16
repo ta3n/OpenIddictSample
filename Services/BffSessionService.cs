@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
-namespace OpenIddictSample2.Services;
+namespace OpenIddictSample.Services;
 
 /// <summary>
 /// BFF Session Service - manages user sessions and tokens for BFF pattern
@@ -118,10 +118,7 @@ public class BffSessionService(
         await cache.SetStringAsync(
             key,
             json,
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = SessionLifetime
-            }
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = SessionLifetime }
         );
     }
 

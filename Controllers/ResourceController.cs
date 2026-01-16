@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OpenIddictSample2.Services;
 using System.Security.Claims;
+using OpenIddictSample.Services;
 
-namespace OpenIddictSample2.Controllers;
+namespace OpenIddictSample.Controllers;
 
 /// <summary>
 /// Protected API Controller - demonstrates token validation
@@ -34,7 +34,13 @@ public class ResourceController(
                 Username = username,
                 Email = email,
                 TenantId = tenantId,
-                Claims = User.Claims.Select(c => new { c.Type, c.Value })
+                Claims = User.Claims.Select(
+                    c => new
+                    {
+                        c.Type,
+                        c.Value
+                    }
+                )
             }
         );
     }
@@ -54,12 +60,7 @@ public class ResourceController(
                 Message = "This is protected data",
                 TenantId = tenantId,
                 Timestamp = DateTime.UtcNow,
-                Data = new[]
-                {
-                    "Item 1",
-                    "Item 2",
-                    "Item 3"
-                }
+                Data = new[] { "Item 1", "Item 2", "Item 3" }
             }
         );
     }

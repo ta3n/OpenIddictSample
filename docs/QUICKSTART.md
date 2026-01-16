@@ -28,10 +28,10 @@ dotnet run
 
 1. Mở trình duyệt: https://localhost:5001/Account/Register
 2. Nhập thông tin:
-    - Username: `testuser`
-    - Email: `test@example.com`
-    - Password: `Test123!`
-    - Tenant ID: `tenant1` (mặc định)
+  - Username: `testuser`
+  - Email: `test@example.com`
+  - Password: `Test123!`
+  - Tenant ID: `tenant1` (mặc định)
 3. Click "Register"
 
 ## Bước 5: Test Authorization Code Flow

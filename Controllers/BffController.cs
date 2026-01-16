@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Client.AspNetCore;
-using OpenIddictSample2.Services;
 using System.Security.Claims;
 using System.Text.Json;
+using OpenIddictSample.Services;
 
-namespace OpenIddictSample2.Controllers;
+namespace OpenIddictSample.Controllers;
 
 /// <summary>
 /// BFF (Backend For Frontend) Controller
@@ -222,10 +222,12 @@ public class BffController(
         {
             var streamContent = new StreamContent(Request.Body);
             foreach (var header in Request.Headers)
+            {
                 if (header.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase))
                 {
                     streamContent.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
                 }
+            }
 
             requestMessage.Content = streamContent;
         }

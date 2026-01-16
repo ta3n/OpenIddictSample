@@ -1,4 +1,4 @@
-namespace OpenIddictSample2.Models;
+namespace OpenIddictSample.Entities;
 
 /// <summary>
 /// Application User model with multi-tenant support

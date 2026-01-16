@@ -1,4 +1,4 @@
-namespace OpenIddictSample2.Middleware;
+namespace OpenIddictSample.Middleware;
 
 /// <summary>
 /// Middleware to add security headers for BFF pattern

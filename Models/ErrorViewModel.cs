@@ -1,4 +1,4 @@
-namespace OpenIddictSample2.Models;
+namespace OpenIddictSample.Models;
 
 public class ErrorViewModel
 {
