@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using OpenIddictSample2.Data;
+using OpenIddictSample.Data;
 
-namespace OpenIddictSample2.Services;
+namespace OpenIddictSample.Services;
 
 /// <summary>
 /// Service to manage tenant context in multi-tenant environment

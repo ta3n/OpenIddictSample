@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using OpenIddictSample2.Models;
+using OpenIddictSample.Entities;
+using OpenIddictSample.Models;
 
-namespace OpenIddictSample2.Data;
+namespace OpenIddictSample.Data;
 
 /// <summary>
 /// Main database context with OpenIddict integration

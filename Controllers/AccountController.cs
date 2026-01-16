@@ -2,19 +2,21 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OpenIddictSample2.Data;
-using OpenIddictSample2.Models;
-using OpenIddictSample2.Services;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using OpenIddictSample.Data;
+using OpenIddictSample.Entities;
+using OpenIddictSample.Models;
+using OpenIddictSample.Services;
 
-namespace OpenIddictSample2.Controllers;
+namespace OpenIddictSample.Controllers;
 
 /// <summary>
 /// Account management controller
 /// Handles login, registration, and user management
 /// </summary>
+[Route("account")]
 public class AccountController(
     ApplicationDbContext context,
     ITenantService tenantService
@@ -81,8 +83,7 @@ public class AccountController(
         await context.SaveChangesAsync();
 
         // Validate and redirect to returnUrl if provided and local
-        if (!string.IsNullOrEmpty(returnUrl) &&
-            (returnUrl.StartsWith('/') || returnUrl.StartsWith("~/")))
+        if (!string.IsNullOrEmpty(returnUrl) && (returnUrl.StartsWith('/') || returnUrl.StartsWith("~/")))
         {
             return Redirect(returnUrl);
         }

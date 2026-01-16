@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
-using OpenIddictSample2.Services;
 using System.Security.Claims;
+using OpenIddictSample.Services;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
-namespace OpenIddictSample2.Controllers;
+namespace OpenIddictSample.Controllers;
 
 /// <summary>
 /// OAuth 2.0 and OpenID Connect Authorization Controller
@@ -18,6 +18,7 @@ namespace OpenIddictSample2.Controllers;
 /// - Token Revocation
 /// - Multi-Tenant Support
 /// </summary>
+[Route("connect")]
 public class AuthorizationController(
     IOpenIddictApplicationManager applicationManager,
     IOpenIddictAuthorizationManager authorizationManager,
@@ -33,8 +34,8 @@ public class AuthorizationController(
     /// Authorization endpoint - handles authorization code flow
     /// GET /connect/authorize
     /// </summary>
-    [HttpGet("~/connect/authorize")]
-    [HttpPost("~/connect/authorize")]
+    [HttpGet("authorize")]
+    [HttpPost("authorize")]
     public async Task<IActionResult> Authorize()
     {
         var request = HttpContext.GetOpenIddictServerRequest()
@@ -141,7 +142,11 @@ public class AuthorizationController(
 
         // Set resources (if any)
         var resources = new List<string>();
-        await foreach (var resource in scopeManager.ListResourcesAsync(principal.GetScopes())) resources.Add(resource);
+        await foreach (var resource in scopeManager.ListResourcesAsync(principal.GetScopes()))
+        {
+            resources.Add(resource);
+        }
+
         principal.SetResources(resources);
 
         // Get existing authorization from claims or create new one
@@ -165,7 +170,7 @@ public class AuthorizationController(
     /// Token endpoint - handles token exchange and refresh
     /// POST /connect/token
     /// </summary>
-    [HttpPost("~/connect/token")]
+    [HttpPost("token")]
     [Produces("application/json")]
     public async Task<IActionResult> Exchange()
     {
@@ -197,8 +202,8 @@ public class AuthorizationController(
     /// Logout endpoint
     /// POST /connect/logout
     /// </summary>
-    [HttpGet("~/connect/logout")]
-    [HttpPost("~/connect/logout")]
+    [HttpGet("logout")]
+    [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
         var request = HttpContext.GetOpenIddictServerRequest();
@@ -219,10 +224,7 @@ public class AuthorizationController(
 
         return SignOut(
             authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            properties: new AuthenticationProperties
-            {
-                RedirectUri = request?.PostLogoutRedirectUri ?? "/"
-            }
+            properties: new AuthenticationProperties { RedirectUri = request?.PostLogoutRedirectUri ?? "/" }
         );
     }
 
@@ -230,7 +232,7 @@ public class AuthorizationController(
     /// Token revocation endpoint
     /// POST /connect/revoke
     /// </summary>
-    [HttpPost("~/connect/revoke")]
+    [HttpPost("revoke")]
     public async Task<IActionResult> Revoke()
     {
         var request = HttpContext.GetOpenIddictServerRequest()
@@ -385,7 +387,11 @@ public class AuthorizationController(
         principal.SetScopes(request.GetScopes());
 
         var resources = new List<string>();
-        await foreach (var resource in scopeManager.ListResourcesAsync(principal.GetScopes())) resources.Add(resource);
+        await foreach (var resource in scopeManager.ListResourcesAsync(principal.GetScopes()))
+        {
+            resources.Add(resource);
+        }
+
         principal.SetResources(resources);
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

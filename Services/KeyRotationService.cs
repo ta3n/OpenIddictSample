@@ -3,7 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace OpenIddictSample2.Services;
+namespace OpenIddictSample.Services;
 
 /// <summary>
 /// Service to manage signing key rotation and JWKS
@@ -92,12 +92,14 @@ public class KeyRotationService(
 
         foreach (var keyInfo in keyInfos)
             // Include keys that haven't expired yet (grace period)
+        {
             if (keyInfo.ExpiresAt.AddDays(30) > DateTime.UtcNow)
             {
                 var rsa = RSA.Create();
                 rsa.ImportRSAPrivateKey(Convert.FromBase64String(keyInfo.PrivateKey), out _);
                 validKeys.Add(new RsaSecurityKey(rsa) { KeyId = keyInfo.KeyId });
             }
+        }
 
         return validKeys;
     }
@@ -134,10 +136,7 @@ public class KeyRotationService(
         await cache.SetStringAsync(
             keyIdString,
             JsonSerializer.Serialize(keyInfo),
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = _keyLifetime.Add(TimeSpan.FromDays(30))
-            }
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = _keyLifetime.Add(TimeSpan.FromDays(30)) }
         );
 
         // Add to validation keys list
@@ -169,10 +168,7 @@ public class KeyRotationService(
         await cache.SetStringAsync(
             keysListId,
             JsonSerializer.Serialize(keyInfos),
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(120)
-            }
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(120) }
         );
     }
 

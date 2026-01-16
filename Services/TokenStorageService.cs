@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
-namespace OpenIddictSample2.Services;
+namespace OpenIddictSample.Services;
 
 /// <summary>
 /// Redis-backed token storage service
@@ -90,10 +90,7 @@ public class TokenStorageService(
         await cache.SetStringAsync(
             key,
             json,
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = expiration
-            }
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = expiration }
         );
 
         // Track user's tokens for bulk revocation
@@ -145,7 +142,10 @@ public class TokenStorageService(
         {
             var tokenIds = JsonSerializer.Deserialize<List<string>>(json) ?? [];
 
-            foreach (var tokenId in tokenIds) await RevokeRefreshTokenAsync(tokenId);
+            foreach (var tokenId in tokenIds)
+            {
+                await RevokeRefreshTokenAsync(tokenId);
+            }
 
             await cache.RemoveAsync(userTokensKey);
         }
@@ -179,10 +179,7 @@ public class TokenStorageService(
         await cache.SetStringAsync(
             userTokensKey,
             updatedJson,
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = expiration
-            }
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = expiration }
         );
     }
 }

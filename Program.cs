@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using OpenIddictSample2.Data;
-using OpenIddictSample2.Middleware;
-using OpenIddictSample2.Services;
+using OpenIddictSample.Data;
+using OpenIddictSample.Entities;
+using OpenIddictSample.Middleware;
+using OpenIddictSample.Services;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -158,7 +159,7 @@ using (var scope = app.Services.CreateScope())
     if (!await context.Tenants.AnyAsync())
     {
         context.Tenants.Add(
-            new OpenIddictSample2.Models.Tenant
+            new Tenant
             {
                 Id = "tenant1",
                 Name = "Default Tenant",
@@ -179,7 +180,7 @@ using (var scope = app.Services.CreateScope())
         var passwordHash = Convert.ToBase64String(hashBytes);
 
         context.Users.Add(
-            new OpenIddictSample2.Models.ApplicationUser
+            new ApplicationUser
             {
                 Id = Guid.NewGuid().ToString(),
                 Username = "testuser",

@@ -1,16 +1,16 @@
 # 🔐 BFF (Backend For Frontend) Pattern Guide
 
-## Tổng Quan
+## Overview
 
-BFF pattern được triển khai để tăng cường bảo mật cho SPAs và Mobile Apps bằng cách:
+The BFF pattern is implemented to enhance security for SPAs and Mobile Apps by:
 
-- 🔒 Lưu tokens ở server-side (không expose cho frontend)
-- 🍪 Sử dụng secure HTTP-only cookies cho session
-- 🛡️ Proxy API calls để thêm access token tự động
-- 🔐 CSRF protection cho state-changing operations
-- 🚫 Ngăn chặn XSS attacks vào tokens
+- 🔒 Storing tokens on the server-side (not exposed to the frontend)
+- 🍪 Using secure HTTP-only cookies for sessions
+- 🛡️ Proxying API calls to automatically add access tokens
+- 🔐 CSRF protection for state-changing operations
+- 🚫 Preventing XSS attacks on tokens
 
-## Kiến Trúc
+## Architecture
 
 ```
 ┌─────────────┐         ┌──────────────┐         ┌──────────────┐
@@ -21,10 +21,10 @@ BFF pattern được triển khai để tăng cường bảo mật cho SPAs và 
 
 **Flow:**
 
-1. Frontend gọi BFF endpoints (không cần handle tokens)
-2. BFF lưu tokens trong Redis session
-3. BFF proxy requests đến Backend APIs với access token
-4. BFF auto-refresh expired tokens
+1. The frontend calls BFF endpoints (no need to handle tokens)
+2. The BFF stores tokens in Redis sessions
+3. The BFF proxies requests to Backend APIs with access tokens
+4. The BFF auto-refreshes expired tokens
 
 ## 🚀 Endpoints
 
@@ -112,18 +112,18 @@ Cookie: bff_session=<session_id>
 
 ### 5. API Proxy
 
-Tất cả requests đến backend API đều proxy qua BFF:
+All requests to the backend API are proxied through the BFF:
 
 ```http
 GET /bff/api/resource/me
 Cookie: bff_session=<session_id>
 ```
 
-BFF tự động:
+The BFF automatically:
 
-- Thêm `Authorization: Bearer <access_token>` header
-- Refresh token nếu cần
-- Forward request đến `/api/resource/me`
+- Adds the `Authorization: Bearer <access_token>` header
+- Refreshes tokens if needed
+- Forwards the request to `/api/resource/me`
 
 **Supports all HTTP methods:**
 
@@ -148,7 +148,7 @@ GET /bff/antiforgery
 }
 ```
 
-Sử dụng token này cho POST/PUT/DELETE requests:
+Use this token for POST/PUT/DELETE requests:
 
 ```http
 POST /bff/api/something
@@ -363,7 +363,7 @@ function ProtectedRoute({ children }) {
 
 ### CORS Configuration
 
-Thêm origin của frontend SPA vào `Program.cs`:
+Add your frontend SPA origin in `Program.cs`:
 
 ```csharp
 policy.WithOrigins(
@@ -380,8 +380,8 @@ policy.WithOrigins(
 Set-Cookie: bff_session=...; HttpOnly; Secure; SameSite=Strict
 ```
 
-- `HttpOnly`: JavaScript không thể access
-- `Secure`: Chỉ gửi qua HTTPS
+- `HttpOnly`: JavaScript cannot access
+- `Secure`: Only sent over HTTPS
 - `SameSite=Strict`: CSRF protection
 
 ### 2. CSRF Protection
@@ -400,14 +400,14 @@ X-CSRF-TOKEN: <token_from_/bff/antiforgery>
 
 ### 4. Automatic Token Refresh
 
-BFF tự động refresh access token khi:
+The BFF automatically refreshes access tokens when:
 
-- Token sắp expire (còn < 5 phút)
-- Token đã expire
+- Tokens are about to expire (less than 5 minutes left)
+- Tokens have already expired
 
 ### 5. Session Management
 
-Sessions được lưu trong Redis với:
+Sessions are stored in Redis with:
 
 - Auto expiration (12 hours)
 - Last accessed time tracking
@@ -466,7 +466,7 @@ bff_session:<session_id> -> {
 }
 ```
 
-## 🧪 Testing với Postman
+## 🧪 Testing with Postman
 
 ### 1. Login
 
@@ -480,7 +480,7 @@ Body:
 }
 ```
 
-**Save the cookie** từ response.
+**Save the cookie** from the response.
 
 ### 2. Get User Info
 
@@ -507,7 +507,7 @@ Cookie: bff_session=<saved_from_login>
 
 ✅ **Enhanced Security:**
 
-- Tokens never exposed to frontend
+- Tokens never exposed to the frontend
 - XSS attacks can't steal tokens
 - HTTP-only cookies
 
@@ -527,7 +527,7 @@ Cookie: bff_session=<saved_from_login>
 
 - Automatic token refresh
 - Seamless session management
-- No "token expired" errors to user
+- No "token expired" errors to the user
 
 ## 🔄 Migration from Token-based to BFF
 
@@ -569,10 +569,10 @@ fetch('/bff/api/data', {
 
 ---
 
-**Lưu ý:** Đây là implementation cơ bản. Trong production, cần:
+**Note:** This is a basic implementation. In production, you should:
 
-- Integrate với actual OAuth flow thay vì dummy tokens
-- Thêm rate limiting
-- Thêm logging và monitoring
+- Integrate with an actual OAuth flow instead of dummy tokens
+- Add rate limiting
+- Add logging and monitoring
 - Implement proper error handling
-- Add unit tests và integration tests
+- Add unit tests and integration tests

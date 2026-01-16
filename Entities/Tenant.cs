@@ -1,4 +1,4 @@
-namespace OpenIddictSample2.Models;
+namespace OpenIddictSample.Entities;
 
 /// <summary>
 /// Tenant model for multi-tenant isolation
